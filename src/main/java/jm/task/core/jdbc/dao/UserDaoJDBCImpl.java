@@ -1,35 +1,85 @@
 package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
+import jm.task.core.jdbc.util.Util;
 
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 public class UserDaoJDBCImpl implements UserDao {
-    public UserDaoJDBCImpl() {
+    private Connection connection = null;
 
+    public UserDaoJDBCImpl() {
+        this.connection = Util.getConnection();
     }
 
     public void createUsersTable() {
-
+        String createTable = "CREATE TABLE IF NOT EXISTS users (Id INT PRIMARY KEY AUTO_INCREMENT, " +
+                "name VARCHAR(255), lastName VARCHAR(255), age INT NOT NULL)";
+        try (PreparedStatement ps = connection.prepareStatement(createTable)) {
+            ps.executeUpdate();
+            System.out.println("Database has been created!");
+        } catch (SQLException e) {
+            System.out.println("Connection failed..." + e);
+        }
     }
 
     public void dropUsersTable() {
-
+        try (PreparedStatement ps = connection.prepareStatement("DROP TABLE IF EXISTS users")) {
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Connection failed..." + e);
+        }
     }
 
     public void saveUser(String name, String lastName, byte age) {
-
+        String sql = "INSERT INTO users (name, lastName, age) VALUES (?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, name);
+            ps.setString(2, lastName);
+            ps.setInt(3, age);
+            ps.executeUpdate();
+            System.out.println("User " + name + " " + lastName + " " + age + " has been saved!");
+        } catch (SQLException e) {
+            System.out.println("Connection failed..." + e);
+        }
     }
 
     public void removeUserById(long id) {
-
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM users WHERE Id = ?")) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
+            System.out.println("User " + id + " has been removed!");
+        } catch (SQLException e) {
+            System.out.println("Connection failed..." + e);
+        }
     }
 
     public List<User> getAllUsers() {
-        return null;
+        List<User> users = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM users");
+             ResultSet resultSet = ps.executeQuery()) {
+            while (resultSet.next()) {
+                User user = new User();
+                user.setId(resultSet.getLong("id"));
+                user.setName(resultSet.getString("name"));
+                user.setLastName(resultSet.getString("lastName"));
+                user.setAge(resultSet.getByte("age"));
+                users.add(user);
+                System.out.println("User " + user.getName() + " " + user.getLastName() + " " + user.getAge());
+            }
+        } catch (SQLException e) {
+            System.out.println("Connection failed..."+e);
+        }
+        return users;
     }
 
     public void cleanUsersTable() {
-
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM users")) {
+            ps.executeUpdate();
+            System.out.println("Users has been cleaned!");
+        } catch (SQLException e) {
+            System.out.println("Connection failed..." + e);
+        }
     }
 }
